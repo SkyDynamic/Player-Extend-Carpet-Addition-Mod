@@ -5,19 +5,20 @@ import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import fengliu.peca.player.sql.PlayerData;
 import fengliu.peca.player.sql.PlayerGroupData;
 import fengliu.peca.player.sql.PlayerGroupSql;
 import fengliu.peca.util.CommandUtil;
 import fengliu.peca.util.PlayerUtil;
-import net.minecraft.command.argument.GameModeArgumentType;
 import net.minecraft.command.argument.Vec3ArgumentType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.GameMode;
 
 import java.util.ArrayList;
@@ -35,10 +36,10 @@ public class PlayerGroup implements IPlayerGroup {
     protected int groupAmount = 0;
     private final List<EntityPlayerMPFake> bots = new ArrayList<>();
 
-    public PlayerGroup(CommandContext<ServerCommandSource> context, Vec3d[] formationPos){
+    public PlayerGroup(CommandContext<ServerCommandSource> context, Vec3d[] formationPos) {
         this.groupName = StringArgumentType.getString(context, "name");
         if (!PlayerUtil.canSpawnGroup(this.groupName, context)){
-            context.getSource().sendError(Text.translatable("peca.info.command.error.create.player.group"));
+            context.getSource().sendError(new TranslatableText("peca.info.command.error.create.player.group"));
             return;
         }
 
@@ -48,11 +49,16 @@ public class PlayerGroup implements IPlayerGroup {
             return;
         }
 
-        GameMode mode = getArgOrDefault(() -> GameModeArgumentType.getGameMode(context, "gamemode"), null);
+        GameMode mode = getArgOrDefault(() -> GameMode.byName(StringArgumentType.getString(context, "gamemode")), null);
         if (formationPos == null){
             Vec3d pos = getArgOrDefault(() -> Vec3ArgumentType.getVec3(context, ""), context.getSource().getPosition());
             for (int index = 1; index < IntegerArgumentType.getInteger(context, "amount") + 1; index++){
-                EntityPlayerMPFake player = PlayerUtil.spawn(this.groupName + "_" + index, pos, mode, context);
+                EntityPlayerMPFake player;
+                try {
+                    player = PlayerUtil.spawn(this.groupName + "_" + index, pos, mode, context);
+                } catch (CommandSyntaxException e) {
+                    throw new RuntimeException(e);
+                }
                 if (player == null){
                     continue;
                 }
@@ -62,7 +68,12 @@ public class PlayerGroup implements IPlayerGroup {
         }
 
         for (int index = 1; index < botAmount + 1; index++){
-            EntityPlayerMPFake player = PlayerUtil.spawn(this.groupName + "_" + index, formationPos[index-1], mode, context);
+            EntityPlayerMPFake player;
+            try {
+                player = PlayerUtil.spawn(this.groupName + "_" + index, formationPos[index-1], mode, context);
+            } catch (CommandSyntaxException e) {
+                throw new RuntimeException(e);
+            }
             if (player == null){
                 continue;
             }
@@ -174,6 +185,14 @@ public class PlayerGroup implements IPlayerGroup {
     }
 
     /**
+     * from 1.20.1
+     */
+    public static Vec3d posOffect(Vec3d pos, Direction direction, double value) {
+        Vec3i var4 = direction.getVector();
+        return new Vec3d(pos.x + value * (double)var4.getX(), pos.y + value * (double)var4.getY(), pos.z + value * (double)var4.getZ());
+    }
+
+    /**
      * 假人组队形
      */
     public enum FormationType {
@@ -183,7 +202,7 @@ public class PlayerGroup implements IPlayerGroup {
          */
         COLUMN("column", (amount, pos, direction, row, interstice, formationPos) -> {
             for (int index = 0; index < amount; index++) {
-                formationPos[index] = pos.offset(direction, addInterstice(index, interstice));
+                formationPos[index] = posOffect(pos, direction, addInterstice(index, interstice));
             }
             return formationPos;
         }),
@@ -198,7 +217,7 @@ public class PlayerGroup implements IPlayerGroup {
                 if (index % rowSize == 0) {
                     rowIndex = 0;
                 }
-                formationPos[index] = pos.offset(direction, addInterstice(rowIndex, interstice));
+                formationPos[index] = posOffect(pos, direction, addInterstice(rowIndex, interstice));
                 rowIndex++;
             }
             return formationPos;
@@ -210,7 +229,7 @@ public class PlayerGroup implements IPlayerGroup {
         ROW("row", ((amount, pos, direction, row, interstice, formationPos) -> {
             Direction rowDirection = getRowDirection(direction);
             for (int index = 0; index < amount; index++) {
-                formationPos[index] = pos.offset(rowDirection, addInterstice(index, interstice));
+                formationPos[index] = posOffect(pos, rowDirection, addInterstice(index, interstice));
             }
             return formationPos;
         })),
@@ -226,7 +245,7 @@ public class PlayerGroup implements IPlayerGroup {
                 if (index % rowSize == 0) {
                     rowIndex = 0;
                 }
-                formationPos[index] = pos.offset(rowDirection, addInterstice(rowIndex, interstice));
+                formationPos[index] = posOffect(pos, rowDirection, addInterstice(rowIndex, interstice));
                 rowIndex++;
             }
             return formationPos;
@@ -246,7 +265,7 @@ public class PlayerGroup implements IPlayerGroup {
                     rowIndex = 0;
                 }
 
-                formationPos[index] = pos.offset(rowDirection, addInterstice(rowIndex, interstice)).offset(direction, addInterstice(rowIn, interstice));
+                formationPos[index] = posOffect(posOffect(pos, rowDirection, addInterstice(rowIndex, interstice)), direction, addInterstice(rowIn, interstice));
                 rowIndex++;
             }
             return formationPos;
@@ -325,7 +344,12 @@ public class PlayerGroup implements IPlayerGroup {
          * @return 队形方向
          */
         public Vec3d[] getFormationPos(CommandContext<ServerCommandSource> context) {
-            PlayerEntity player = context.getSource().getPlayer();
+            PlayerEntity player;
+            try {
+                player = context.getSource().getPlayer();
+            } catch (CommandSyntaxException e) {
+                throw new RuntimeException(e);
+            }
             if (player == null) {
                 return null;
             }

@@ -8,9 +8,9 @@ import fengliu.peca.util.CommandUtil;
 import fengliu.peca.util.sql.ISqlConnection;
 import fengliu.peca.util.sql.SqlUtil;
 import net.minecraft.command.argument.DimensionArgumentType;
-import net.minecraft.command.argument.GameModeArgumentType;
 import net.minecraft.command.argument.Vec3ArgumentType;
-import net.minecraft.registry.RegistryKey;
+import net.minecraft.util.registry.RegistryKey;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -187,13 +187,13 @@ public class PlayerSql {
         ServerWorld world = CommandUtil.getArgOrDefault(() -> DimensionArgumentType.getDimensionArgument(context, "dimension"), null);
         RegistryKey<DimensionType> dimensionKey = null;
         if (world != null) {
-            dimensionKey = world.getDimensionKey();
+            dimensionKey = RegistryKey.of(Registry.DIMENSION_TYPE_KEY, world.getRegistryKey().getValue());
         }
 
         return readPlayer(
                 -1,
                 CommandUtil.getArgOrDefault(() -> StringArgumentType.getString(context, "name"), null),
-                CommandUtil.getArgOrDefault(() -> GameModeArgumentType.getGameMode(context, "gamemode"), null),
+                CommandUtil.getArgOrDefault(() -> GameMode.byName(StringArgumentType.getString(context, "gamemode")), null),
                 CommandUtil.getArgOrDefault(() -> Vec3ArgumentType.getVec3(context, "pos"), null),
                 CommandUtil.getArgOrDefault(() -> IntegerArgumentType.getInteger(context, "offset"), null),
                 dimensionKey

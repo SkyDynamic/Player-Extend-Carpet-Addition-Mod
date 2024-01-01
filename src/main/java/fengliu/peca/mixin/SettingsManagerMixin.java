@@ -1,6 +1,6 @@
 package fengliu.peca.mixin;
 
-import carpet.api.settings.SettingsManager;
+import carpet.settings.SettingsManager;
 import carpet.utils.Messenger;
 import carpet.utils.Translations;
 import fengliu.peca.PecaMod;
@@ -21,7 +21,7 @@ public class SettingsManagerMixin {
             shift = At.Shift.AFTER
         ),
         slice = @Slice(
-            from = @At(value = "INVOKE", target = "Lcarpet/api/settings/SettingsManager;listSettings(Lnet/minecraft/server/command/ServerCommandSource;Ljava/lang/String;Ljava/util/Collection;)I"),
+            from = @At(value = "INVOKE", target = "Lcarpet/settings/SettingsManager;listSettings(Lnet/minecraft/server/command/ServerCommandSource;Ljava/lang/String;Ljava/util/Collection;)I"),
             to = @At(value = "INVOKE", target = "Ljava/util/ArrayList;<init>()V")
         )
     )

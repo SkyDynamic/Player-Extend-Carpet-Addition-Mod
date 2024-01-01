@@ -15,7 +15,6 @@ import fengliu.peca.player.sql.PlayerGroupSql;
 import fengliu.peca.player.sql.PlayerSql;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.util.WorldSavePath;
@@ -70,11 +69,11 @@ public class PecaMod implements ModInitializer, CarpetExtension {
     }
 
     @Override
-    public void registerCommands(CommandDispatcher<ServerCommandSource> dispatcher, CommandRegistryAccess commandBuildContext) {
+    public void registerCommands(CommandDispatcher<ServerCommandSource> dispatcher) {
         PlayerGroupCommand.registerAll(dispatcher);
-        PlayerAutoCommand.registerAll(dispatcher, commandBuildContext);
-        PlayerManageCommand.registerAll(dispatcher, commandBuildContext);
-        PecaCommand.registerAll(dispatcher, commandBuildContext);
+        PlayerAutoCommand.registerAll(dispatcher);
+        PlayerManageCommand.registerAll(dispatcher);
+        PecaCommand.registerAll(dispatcher);
     }
 
     @Override

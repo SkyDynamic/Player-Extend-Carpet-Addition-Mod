@@ -4,7 +4,7 @@ import carpet.helpers.EntityPlayerActionPack;
 import carpet.helpers.EntityPlayerActionPack.Action;
 import carpet.helpers.EntityPlayerActionPack.ActionType;
 import carpet.patches.EntityPlayerMPFake;
-import carpet.utils.CommandHelper;
+import carpet.settings.SettingsManager;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonPrimitive;
 import com.mojang.brigadier.Command;
@@ -25,10 +25,10 @@ import fengliu.peca.player.sql.PlayerData;
 import fengliu.peca.player.sql.PlayerGroupData;
 import fengliu.peca.player.sql.PlayerGroupSql;
 import fengliu.peca.util.CommandUtil;
+import fengliu.peca.util.GameModeSuggestionProvider;
 import fengliu.peca.util.Page;
 import fengliu.peca.util.TextClickUtil;
 import net.minecraft.command.argument.EntityArgumentType;
-import net.minecraft.command.argument.GameModeArgumentType;
 import net.minecraft.command.argument.RotationArgumentType;
 import net.minecraft.command.argument.Vec3ArgumentType;
 import net.minecraft.server.command.ServerCommandSource;
@@ -36,6 +36,8 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
+import net.minecraft.text.LiteralText;
 import net.minecraft.util.math.Direction;
 
 import java.util.ArrayList;
@@ -50,19 +52,19 @@ import static net.minecraft.server.command.CommandManager.literal;
 
 public class PlayerGroupCommand {
     private static final LiteralArgumentBuilder<ServerCommandSource> PlayerGroupCmd = literal("playerGroup")
-            .requires((player) -> CommandHelper.canUseCommand(player, PecaSettings.commandPlayerGroup));
+            .requires((player) -> SettingsManager.canUseCommand(player, PecaSettings.commandPlayerGroup));
 
     public static void registerAll(CommandDispatcher<ServerCommandSource> dispatcher) {
         PlayerGroupCmd.then(argument("name", StringArgumentType.string())
                 .then(literal("spawn").executes(PlayerGroup::createGroup)
                         .then(argument("amount", IntegerArgumentType.integer()).executes(PlayerGroup::createGroup)
                         .then(makeFormationCommands())
-                        .then(literal("in").then(argument("gamemode", GameModeArgumentType.gameMode())
+                        .then(literal("in").then(argument("gamemode", StringArgumentType.string()).suggests(new GameModeSuggestionProvider())
                                 .requires(source -> source.hasPermissionLevel(2)).executes(PlayerGroup::createGroup)
                                 .then(makeFormationCommands())))
                         .then(literal("at").then(argument("position", Vec3ArgumentType.vec3()).executes(PlayerGroup::createGroup)
                                 .then(makeFormationCommands())
-                                .then(literal("in").then(argument("gamemode", GameModeArgumentType.gameMode()).executes(PlayerGroup::createGroup)
+                                .then(literal("in").then(argument("gamemode", StringArgumentType.string()).suggests(new GameModeSuggestionProvider()).executes(PlayerGroup::createGroup)
                                         .then(makeFormationCommands())))))))
 
                 .then(literal("kill").executes(context -> {
@@ -139,7 +141,7 @@ public class PlayerGroupCommand {
     private static int stop(CommandContext<ServerCommandSource> context) {
         PlayerGroup group = PlayerGroup.getGroup(StringArgumentType.getString(context, "name"));
         if (group == null) {
-            context.getSource().sendError(Text.translatable("peca.info.command.error.not.player.group", StringArgumentType.getString(context, "name")));
+            context.getSource().sendError(new TranslatableText("peca.info.command.error.not.player.group", StringArgumentType.getString(context, "name")));
             return -1;
         }
 
@@ -156,7 +158,7 @@ public class PlayerGroupCommand {
     private static int playerGroupManipulation(CommandContext<ServerCommandSource> context, Consumer<EntityPlayerActionPack> action) {
         PlayerGroup group = PlayerGroup.getGroup(StringArgumentType.getString(context, "name"));
         if (group == null) {
-            context.getSource().sendError(Text.translatable("peca.info.command.error.not.player.group", StringArgumentType.getString(context, "name")));
+            context.getSource().sendError(new TranslatableText("peca.info.command.error.not.player.group", StringArgumentType.getString(context, "name")));
             return -1;
         }
 
@@ -288,40 +290,40 @@ public class PlayerGroupCommand {
         @Override
         public List<MutableText> putPageData(PlayerGroupData pageData, int index) {
             List<MutableText> texts = new ArrayList<>();
-            texts.add(Text.literal(String.format("[%s] ", index))
+            texts.add(new LiteralText(String.format("[%s] ", index))
                     .append(pageData.name())
                     .append(" §7- ")
-                    .append(Text.translatable("peca.info.command.player.group.count", pageData.botCount()).setStyle(Style.EMPTY.withColor(0x00AAAA)))
+                    .append(new TranslatableText("peca.info.command.player.group.count", pageData.botCount()).setStyle(Style.EMPTY.withColor(0x00AAAA)))
                     .append(" §7- ")
-                    .append(Text.translatable(getCreateText(pageData))));
-            texts.add(Text.translatable("peca.info.command.player.group.purpose", "§6" + pageData.purpose())
-                    .append(TextClickUtil.runText(Text.translatable("peca.info.command.player.group.spawn"), String.format("/playerGroup id %s spawn", pageData.id())))
-                    .append(TextClickUtil.runText(Text.translatable("peca.info.command.player.group.kill"), String.format("/playerGroup %s kill", pageData.name())))
-                    .append(TextClickUtil.runText(Text.translatable("peca.info.command.player.group.info"), String.format("/playerGroup id %s info", pageData.id())))
-                    .append(TextClickUtil.runText(Text.translatable("peca.info.command.player.group.delete"), String.format("/playerGroup id %s delete", pageData.id())))
+                    .append(new TranslatableText(getCreateText(pageData))));
+            texts.add(new TranslatableText("peca.info.command.player.group.purpose", "§6" + pageData.purpose())
+                    .append(TextClickUtil.runText(new TranslatableText("peca.info.command.player.group.spawn"), String.format("/playerGroup id %s spawn", pageData.id())))
+                    .append(TextClickUtil.runText(new TranslatableText("peca.info.command.player.group.kill"), String.format("/playerGroup %s kill", pageData.name())))
+                    .append(TextClickUtil.runText(new TranslatableText("peca.info.command.player.group.info"), String.format("/playerGroup id %s info", pageData.id())))
+                    .append(TextClickUtil.runText(new TranslatableText("peca.info.command.player.group.delete"), String.format("/playerGroup id %s delete", pageData.id())))
             );
             return texts;
         }
     }
 
-    private static int save(CommandContext<ServerCommandSource> context){
+    private static int save(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         String purpose = StringArgumentType.getString(context, "purpose");
         if (purpose.isEmpty()) {
-            context.getSource().sendError(Text.translatable("peca.info.command.error.not.bot.purpose"));
+            context.getSource().sendError(new TranslatableText("peca.info.command.error.not.bot.purpose"));
             return -1;
         }
 
         String name = StringArgumentType.getString(context, "name");
         IPlayerGroup playerGroup = PlayerGroup.getGroup(name);
         if (playerGroup == null){
-            context.getSource().sendError(Text.translatable("peca.info.command.error.not.player.group", name));
+            context.getSource().sendError(new TranslatableText("peca.info.command.error.not.player.group", name));
             return -1;
         }
 
         CommandUtil.booleanPrintMsg(
                 PlayerGroupSql.saveGroup(playerGroup, context.getSource().getPlayer(), purpose),
-                Text.translatable("peca.info.command.save.player.group", name),
-                Text.translatable("peca.info.command.error.save.player.group"),
+                new TranslatableText("peca.info.command.save.player.group", name),
+                new TranslatableText("peca.info.command.error.save.player.group"),
                 context
         );
         return Command.SINGLE_SUCCESS;
@@ -331,8 +333,8 @@ public class PlayerGroupCommand {
         long id = LongArgumentType.getLong(context, "id");
         CommandUtil.booleanPrintMsg(
                 PlayerGroupSql.deleteGroup(id),
-                Text.translatable("peca.info.command.delete.player.group.info", id),
-                Text.translatable("peca.info.command.error.delete.player.group", id),
+                new TranslatableText("peca.info.command.delete.player.group.info", id),
+                new TranslatableText("peca.info.command.error.delete.player.group", id),
                 context
         );
         return Command.SINGLE_SUCCESS;
@@ -342,8 +344,8 @@ public class PlayerGroupCommand {
         long id = LongArgumentType.getLong(context, "id");
         CommandUtil.booleanPrintMsg(
                 PlayerGroupSql.spawnGroup(id, context.getSource().getServer()),
-                Text.translatable("peca.info.command.spawn.player.group", id),
-                Text.translatable("peca.info.command.error.spawn.player.group", id),
+                new TranslatableText("peca.info.command.spawn.player.group", id),
+                new TranslatableText("peca.info.command.error.spawn.player.group", id),
                 context
         );
         return Command.SINGLE_SUCCESS;
@@ -353,17 +355,17 @@ public class PlayerGroupCommand {
         List<PlayerGroupData> run(CommandContext<ServerCommandSource> context) throws CommandSyntaxException;
     }
 
-    private static int find(CommandContext<ServerCommandSource> context, Find find){
+    private static int find(CommandContext<ServerCommandSource> context, Find find) throws CommandSyntaxException {
         List<PlayerGroupData> lists = null;
         try {
             lists = find.run(context);
         } catch (CommandSyntaxException e) {
-            context.getSource().sendMessage(Text.translatable("peca.info.command.player.group.find.empty"));
+            context.getSource().sendFeedback(new TranslatableText("peca.info.command.player.group.find.empty"), false);
             return -1;
         }
 
         if (lists.isEmpty()) {
-            context.getSource().sendMessage(Text.translatable("peca.info.command.player.group.find.empty"));
+            context.getSource().sendFeedback(new TranslatableText("peca.info.command.player.group.find.empty"), false);
             return -1;
         }
 
@@ -374,16 +376,16 @@ public class PlayerGroupCommand {
     }
 
     private static void printInfo(CommandContext<ServerCommandSource> context, PlayerGroupData playerGroupData) {
-        context.getSource().sendMessage(Text.translatable("peca.info.command.player.group.name", String.format("%s - %s ", playerGroupData.name(), Text.translatable(getCreateText(playerGroupData)).getString())));
-        context.getSource().sendMessage(Text.translatable("peca.info.command.player.group.count", playerGroupData.botCount()).setStyle(Style.EMPTY.withColor(0x00AAAA)));
+        context.getSource().sendFeedback(new TranslatableText("peca.info.command.player.group.name", String.format("%s - %s ", playerGroupData.name(), new TranslatableText(getCreateText(playerGroupData)).getString())), false);
+        context.getSource().sendFeedback(new TranslatableText("peca.info.command.player.group.count", playerGroupData.botCount()).setStyle(Style.EMPTY.withColor(0x00AAAA)), false);
 
-        context.getSource().sendMessage(Text.translatable("peca.info.command.player.group.player.info.1"));
+        context.getSource().sendFeedback(new TranslatableText("peca.info.command.player.group.player.info.1"), false);
         for(int index = 0; index < playerGroupData.players().size(); index++) {
             PlayerData playerData = playerGroupData.players().get(index);
-            context.getSource().sendMessage(Text.literal(String.format("[%s] %s §3- §6x: %s y: %s z: %s §3- §7%s", index + 1, playerData.name(), (int) playerData.pos().x, (int) playerData.pos().y, (int) playerData.pos().z, playerData.dimension())));
-            context.getSource().sendMessage(Text.translatable("peca.info.command.player.execute.info",
-                    playerData.execute().toString().replace("[", "§3[").replace("]", "§3]").replace(",", "§3,").replace("\"", "§6\"")));
-            context.getSource().sendMessage(TextClickUtil.suggestText(Text.translatable("peca.info.command.player.spawn.suggest"), String.format(
+            context.getSource().sendFeedback(new LiteralText(String.format("[%s] %s §3- §6x: %s y: %s z: %s §3- §7%s", index + 1, playerData.name(), (int) playerData.pos().x, (int) playerData.pos().y, (int) playerData.pos().z, playerData.dimension())), false);
+            context.getSource().sendFeedback(new TranslatableText("peca.info.command.player.execute.info",
+                    playerData.execute().toString().replace("[", "§3[").replace("]", "§3]").replace(",", "§3,").replace("\"", "§6\"")), false);
+            context.getSource().sendFeedback(TextClickUtil.suggestText(new TranslatableText("peca.info.command.player.spawn.suggest"), String.format(
                             "/player %s spawn at %g %g %g facing %g %g in %s in %s",
                             playerData.name(),
                             playerData.pos().x,
@@ -394,11 +396,11 @@ public class PlayerGroupCommand {
                             playerData.dimension().getPath(),
                             playerData.gamemode().getName()
                     ))
-                    .append(TextClickUtil.runText(Text.translatable("peca.info.command.player.stop"), String.format("/player %s stop", playerData.name())))
-                    .append(TextClickUtil.runText(Text.translatable("peca.info.command.player.kill"), String.format("/player %s kill", playerData.name())))
-                    .append(TextClickUtil.runText(Text.translatable("peca.info.command.player.group.delete.player"), String.format("/playerGroup %s del %s", playerGroupData.name(), playerData.name()))));
+                    .append(TextClickUtil.runText(new TranslatableText("peca.info.command.player.stop"), String.format("/player %s stop", playerData.name())))
+                    .append(TextClickUtil.runText(new TranslatableText("peca.info.command.player.kill"), String.format("/player %s kill", playerData.name())))
+                    .append(TextClickUtil.runText(new TranslatableText("peca.info.command.player.group.delete.player"), String.format("/playerGroup %s del %s", playerGroupData.name(), playerData.name()))), false);
         }
-        context.getSource().sendMessage(Text.translatable("peca.info.command.player.group.player.info.2"));
+        context.getSource().sendFeedback(new TranslatableText("peca.info.command.player.group.player.info.2"), false);
 
         if (playerGroupData.id() == -1){
             return;
@@ -406,24 +408,24 @@ public class PlayerGroupCommand {
 
         ServerPlayerEntity createPlayer = context.getSource().getServer().getPlayerManager().getPlayer(playerGroupData.createPlayerUuid());
         if (createPlayer != null) {
-            context.getSource().sendMessage(Text.translatable("peca.info.command.player.create.player", createPlayer.getName()).setStyle(Style.EMPTY.withColor(0x00AAAA)));
+            context.getSource().sendFeedback(new TranslatableText("peca.info.command.player.create.player", createPlayer.getName()).setStyle(Style.EMPTY.withColor(0x00AAAA)), false);
         }
-        context.getSource().sendMessage(Text.translatable("peca.info.command.player.create.player.uuid", playerGroupData.createPlayerUuid()).setStyle(Style.EMPTY.withColor(0x00AAAA)));
-        context.getSource().sendMessage(Text.translatable("peca.info.command.player.create.time", playerGroupData.createTime()).setStyle(Style.EMPTY.withColor(0x00AAAA)));
+        context.getSource().sendFeedback(new TranslatableText("peca.info.command.player.create.player.uuid", playerGroupData.createPlayerUuid()).setStyle(Style.EMPTY.withColor(0x00AAAA)), false);
+        context.getSource().sendFeedback(new TranslatableText("peca.info.command.player.create.time", playerGroupData.createTime()).setStyle(Style.EMPTY.withColor(0x00AAAA)), false);
         ServerPlayerEntity lastModifiedPlayer = context.getSource().getServer().getPlayerManager().getPlayer(playerGroupData.lastModifiedPlayerUuid());
         if (lastModifiedPlayer != null) {
-            context.getSource().sendMessage(Text.translatable("peca.info.command.player.last.modified.player", lastModifiedPlayer.getName()).setStyle(Style.EMPTY.withColor(0x00AAAA)));
+            context.getSource().sendFeedback(new TranslatableText("peca.info.command.player.last.modified.player", lastModifiedPlayer.getName()).setStyle(Style.EMPTY.withColor(0x00AAAA)), false);
         }
-        context.getSource().sendMessage(Text.translatable("peca.info.command.player.last.modified.player.uuid", playerGroupData.lastModifiedPlayerUuid()).setStyle(Style.EMPTY.withColor(0x00AAAA)));
-        context.getSource().sendMessage(Text.translatable("peca.info.command.player.last.modified.time", playerGroupData.lastModifiedTime()).setStyle(Style.EMPTY.withColor(0x00AAAA)));
-        context.getSource().sendMessage(Text.translatable("peca.info.command.player.group.purpose", playerGroupData.purpose()));
-        context.getSource().sendMessage(Text.translatable("peca.info.command.player.group.id", playerGroupData.id()).setStyle(Style.EMPTY.withColor(0x00AAAA)));
-        context.getSource().sendMessage(Text.translatable("peca.info.command.player.group.data.info").setStyle(Style.EMPTY.withColor(0xFF5555)));
-        context.getSource().sendMessage(TextClickUtil.runText(Text.translatable("peca.info.command.player.group.spawn"), String.format("/playerGroup id %s spawn", playerGroupData.id()))
-                .append(TextClickUtil.runText(Text.translatable("peca.info.command.player.group.execute"), String.format("/playerGroup id %s execute", playerGroupData.id())))
-                .append(TextClickUtil.runText(Text.translatable("peca.info.command.player.group.stop"), String.format("/playerGroup %s stop", playerGroupData.name())))
-                .append(TextClickUtil.runText(Text.translatable("peca.info.command.player.group.kill"), String.format("/playerGroup %s kill", playerGroupData.name())))
-                .append(TextClickUtil.runText(Text.translatable("peca.info.command.player.group.delete"), String.format("/playerGroup id %s delete", playerGroupData.id()))));
+        context.getSource().sendFeedback(new TranslatableText("peca.info.command.player.last.modified.player.uuid", playerGroupData.lastModifiedPlayerUuid()).setStyle(Style.EMPTY.withColor(0x00AAAA)), false);
+        context.getSource().sendFeedback(new TranslatableText("peca.info.command.player.last.modified.time", playerGroupData.lastModifiedTime()).setStyle(Style.EMPTY.withColor(0x00AAAA)), false);
+        context.getSource().sendFeedback(new TranslatableText("peca.info.command.player.group.purpose", playerGroupData.purpose()), false);
+        context.getSource().sendFeedback(new TranslatableText("peca.info.command.player.group.id", playerGroupData.id()).setStyle(Style.EMPTY.withColor(0x00AAAA)), false);
+        context.getSource().sendFeedback(new TranslatableText("peca.info.command.player.group.data.info").setStyle(Style.EMPTY.withColor(0xFF5555)), false);
+        context.getSource().sendFeedback(TextClickUtil.runText(new TranslatableText("peca.info.command.player.group.spawn"), String.format("/playerGroup id %s spawn", playerGroupData.id()))
+                .append(TextClickUtil.runText(new TranslatableText("peca.info.command.player.group.execute"), String.format("/playerGroup id %s execute", playerGroupData.id())))
+                .append(TextClickUtil.runText(new TranslatableText("peca.info.command.player.group.stop"), String.format("/playerGroup %s stop", playerGroupData.name())))
+                .append(TextClickUtil.runText(new TranslatableText("peca.info.command.player.group.kill"), String.format("/playerGroup %s kill", playerGroupData.name())))
+                .append(TextClickUtil.runText(new TranslatableText("peca.info.command.player.group.delete"), String.format("/playerGroup id %s delete", playerGroupData.id()))), false);
     }
 
     private static int infoId(CommandContext<ServerCommandSource> context) {
@@ -434,13 +436,13 @@ public class PlayerGroupCommand {
     private static int addPlayer(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         PlayerGroup playerGroup = PlayerGroup.getGroup(StringArgumentType.getString(context, "name"));
         if (playerGroup == null){
-            context.getSource().sendMessage(Text.translatable("peca.info.command.player.group.find.empty"));
+            context.getSource().sendFeedback(new TranslatableText("peca.info.command.player.group.find.empty"), false);
             return -1;
         }
 
         ServerPlayerEntity player = EntityArgumentType.getPlayer(context, "player");
         if (!(player instanceof EntityPlayerMPFake fakePlayer)){
-            context.getSource().sendMessage(Text.translatable("peca.info.command.error.player.group.add.not.fake.player"));
+            context.getSource().sendFeedback(new TranslatableText("peca.info.command.error.player.group.add.not.fake.player"), false);
             return -1;
         }
 
@@ -451,7 +453,7 @@ public class PlayerGroupCommand {
     private static int delPlayer(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         PlayerGroup playerGroup = PlayerGroup.getGroup(StringArgumentType.getString(context, "name"));
         if (playerGroup == null) {
-            context.getSource().sendMessage(Text.translatable("peca.info.command.player.group.find.empty"));
+            context.getSource().sendFeedback(new TranslatableText("peca.info.command.player.group.find.empty"), false);
             return -1;
         }
 
@@ -469,8 +471,8 @@ public class PlayerGroupCommand {
                         CommandUtil.getArgOrDefault(() -> IntegerArgumentType.getInteger(context, "index") - 1, -1),
                         CommandUtil.getArgOrDefault(() -> StringArgumentType.getString(context, "name"), null)
                 ),
-                Text.translatable("peca.info.command.player.group.execute.update"),
-                Text.translatable("peca.info.command.error.player.group.execute.update"),
+                new TranslatableText("peca.info.command.player.group.execute.update"),
+                new TranslatableText("peca.info.command.error.player.group.execute.update"),
                 context
         );
     }
@@ -478,7 +480,7 @@ public class PlayerGroupCommand {
     private static int execute(CommandContext<ServerCommandSource> context) {
         setExecute(context, (executeArray, playerName) -> {
             executeArray.forEach(command -> {
-                context.getSource().getServer().getCommandManager().executeWithPrefix(context.getSource(), command.getAsString());
+                context.getSource().getServer().getCommandManager().execute(context.getSource(), command.getAsString());
             });
             return executeArray;
         });
@@ -488,7 +490,7 @@ public class PlayerGroupCommand {
     private static int executeAdd(CommandContext<ServerCommandSource> context) {
         String command = StringArgumentType.getString(context, "command");
         if (!command.startsWith("/player")) {
-            context.getSource().sendError(Text.translatable("peca.info.command.error.execute.add.starts"));
+            context.getSource().sendError(new TranslatableText("peca.info.command.error.execute.add.starts"));
             return -1;
         }
 
@@ -515,7 +517,7 @@ public class PlayerGroupCommand {
         int index = IntegerArgumentType.getInteger(context, "commandIndex") - 1;
         String command = StringArgumentType.getString(context, "command");
         if (!command.startsWith("/player")) {
-            context.getSource().sendError(Text.translatable("peca.info.command.error.execute.add.starts"));
+            context.getSource().sendError(new TranslatableText("peca.info.command.error.execute.add.starts"));
             return -1;
         }
 

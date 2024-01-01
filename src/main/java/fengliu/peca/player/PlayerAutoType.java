@@ -72,7 +72,7 @@ public enum PlayerAutoType {
         }
     }, (context, player) -> {
         if (!(player.currentScreenHandler instanceof PlayerScreenHandler)) {
-            player.currentScreenHandler.onClosed(player);
+            player.currentScreenHandler.close(player);
         }
     }),
 
@@ -110,7 +110,7 @@ public enum PlayerAutoType {
                 return;
             }
 
-            ItemStack craftStack = optional.get().craft(fakeCraftingInventory, world.getRegistryManager());
+            ItemStack craftStack = optional.get().craft(fakeCraftingInventory);
             if (!craftStack.isOf(stack.getItem()) && !stack.isEmpty()){
                 return;
             }

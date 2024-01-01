@@ -6,13 +6,14 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import fengliu.peca.util.CommandUtil;
 import fengliu.peca.util.PlayerUtil;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
+import net.minecraft.util.registry.Registry;
+import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
+import net.minecraft.world.World;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -56,6 +57,12 @@ public record PlayerData(
         UUID lastModifiedPlayerUuid
 ) {
 
+    public static final RegistryKey<Registry<World>> WORLD = of("dimension");
+
+    private static <T> RegistryKey<Registry<T>> of(String id) {
+        return RegistryKey.ofRegistry(new Identifier(id));
+    }
+
     /**
      * 从查询结果表转假人数据列表
      *
@@ -96,7 +103,7 @@ public record PlayerData(
         return new PlayerData(
                 -1,
                 player.getEntityName(),
-                player.getWorld().getDimensionKey().getValue(),
+                player.getWorld().getDimension().getEffects(),
                 player.getPos(),
                 player.getYaw(),
                 player.getPitch(),
@@ -194,6 +201,6 @@ public record PlayerData(
         if (!PlayerUtil.canSpawn(this.name, server.getPlayerManager())){
             return null;
         }
-        return EntityPlayerMPFake.createFake(this.name, server, this.pos, this.yaw, this.pitch, RegistryKey.of(RegistryKeys.WORLD, this.dimension), this.gamemode, this.flying);
+        return EntityPlayerMPFake.createFake(this.name, server, this.pos.x, this.pos.y, this.pos.z, this.yaw, this.pitch, RegistryKey.of(WORLD, this.dimension), this.gamemode, this.flying);
     }
 }

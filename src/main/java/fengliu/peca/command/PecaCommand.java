@@ -6,7 +6,6 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import fengliu.peca.util.Page;
-import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -26,7 +25,7 @@ public class PecaCommand {
         pages.put(player.getUuid(), page);
     }
 
-    public static void registerAll(CommandDispatcher<ServerCommandSource> dispatcher, CommandRegistryAccess commandBuildContext){
+    public static void registerAll(CommandDispatcher<ServerCommandSource> dispatcher){
         PecaCmd.then(makePageCommand("next", (context, page) -> page.next()))
             .then(makePageCommand("prev", (context, page) -> page.prev()))
             .then(makePageCommand("to", (context, page) -> page.to(IntegerArgumentType.getInteger(context, "page"))).then(argument("page", IntegerArgumentType.integer(0))));

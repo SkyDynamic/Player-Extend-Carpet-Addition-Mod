@@ -22,7 +22,7 @@ public class CommandUtil {
 
     public static void booleanPrintMsg(boolean bool, MutableText text, MutableText errorText, CommandContext<ServerCommandSource> context) {
         if (bool) {
-            context.getSource().sendMessage(text);
+            context.getSource().sendFeedback(text, false);
         } else {
             context.getSource().sendError(errorText);
         }

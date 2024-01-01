@@ -1,6 +1,6 @@
 package fengliu.peca.player;
 
-import carpet.fakes.ServerPlayerInterface;
+import carpet.fakes.ServerPlayerEntityInterface;
 import carpet.helpers.EntityPlayerActionPack;
 import carpet.patches.EntityPlayerMPFake;
 
@@ -89,7 +89,7 @@ public interface IPlayerGroup {
      */
     default void manipulation(Consumer<EntityPlayerActionPack> action) {
         this.getBots().forEach(bot -> {
-            action.accept(((ServerPlayerInterface) bot).getActionPack());
+            action.accept(((ServerPlayerEntityInterface) bot).getActionPack());
         });
     }
 
@@ -100,7 +100,7 @@ public interface IPlayerGroup {
      */
     default void manipulation(Consumer<EntityPlayerActionPack> action, int start, int end) {
         this.subBot(start, end).forEach(bot -> {
-            action.accept(((ServerPlayerInterface) bot).getActionPack());
+            action.accept(((ServerPlayerEntityInterface) bot).getActionPack());
         });
     }
 

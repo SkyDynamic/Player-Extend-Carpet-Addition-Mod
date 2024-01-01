@@ -3,6 +3,7 @@ package fengliu.peca.util;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 
 import java.util.List;
 
@@ -35,14 +36,14 @@ public abstract class Page<Type> {
 
     public void look(){
         this.pageDataIndex = this.pageIn * this.limit + 1;
-        this.context.sendMessage(Text.translatable("peca.info.page.count", String.format("%s/%s", this.pageIn + 1, this.pageCount)));
+        this.context.sendFeedback(new TranslatableText("peca.info.page.count", String.format("%s/%s", this.pageIn + 1, this.pageCount)), false);
         this.getPageData().forEach(data -> {
-            this.putPageData(data, this.pageDataIndex).forEach(this.context::sendMessage);
+            this.putPageData(data, this.pageDataIndex).forEach(msg -> this.context.sendFeedback(msg, false));
             this.pageDataIndex++;
         });
-        this.context.sendMessage(TextClickUtil.runText(Text.translatable("peca.info.page.prev"), "/peca prev")
-                .append(TextClickUtil.runText(Text.translatable("peca.info.page.next"), "/peca next"))
-                .append(TextClickUtil.suggestText(Text.translatable("peca.info.page.to"), "/peca to ")));
+        this.context.sendFeedback(TextClickUtil.runText(new TranslatableText("peca.info.page.prev"), "/peca prev")
+                .append(TextClickUtil.runText(new TranslatableText("peca.info.page.next"), "/peca next"))
+                .append(TextClickUtil.suggestText(new TranslatableText("peca.info.page.to"), "/peca to ")), false);
     }
 
     public void next(){

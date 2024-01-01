@@ -3,6 +3,7 @@ package fengliu.peca.util.sql;
 import fengliu.peca.PecaMod;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.world.World;
 
 import java.sql.Connection;
@@ -74,7 +75,7 @@ public interface ISqlConnection {
             }
 
             statement.execute(this.getCreateTableSql());
-            PecaMod.LOGGER.info(Text.translatable(String.format("peca.info.sql.not.exist.table.%s", this.getTableName())).getString());
+            PecaMod.LOGGER.info(new TranslatableText(String.format("peca.info.sql.not.exist.table.%s", this.getTableName())).getString());
             return true;
         });
     }
@@ -87,7 +88,7 @@ public interface ISqlConnection {
      */
     default Object executeSpl(Job job) {
         if (!createTable()) {
-            PecaMod.LOGGER.error(Text.translatable(String.format("peca.info.sql.error.exist.table.%s", this.getTableName())).getString());
+            PecaMod.LOGGER.error(new TranslatableText(String.format("peca.info.sql.error.exist.table.%s", this.getTableName())).getString());
             return false;
         }
         return runSql(job);

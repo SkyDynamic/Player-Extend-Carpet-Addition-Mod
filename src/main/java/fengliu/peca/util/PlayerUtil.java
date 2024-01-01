@@ -2,6 +2,7 @@ package fengliu.peca.util;
 
 import carpet.patches.EntityPlayerMPFake;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import fengliu.peca.PecaSettings;
 import fengliu.peca.player.PlayerGroup;
 import net.minecraft.entity.player.PlayerEntity;
@@ -50,7 +51,7 @@ public class PlayerUtil {
         return canSpawn.get();
     }
 
-    public static EntityPlayerMPFake spawn(String name, Vec3d pos, GameMode mode, CommandContext<ServerCommandSource> context){
+    public static EntityPlayerMPFake spawn(String name, Vec3d pos, GameMode mode, CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         if (!canSpawn(name, context)){
             return null;
         }
@@ -75,10 +76,10 @@ public class PlayerUtil {
             flying = true;
         }
 
-        return EntityPlayerMPFake.createFake(name, context.getSource().getServer(), pos, facing.y, facing.x, context.getSource().getPlayer().getSpawnPointDimension(), mode, flying);
+        return EntityPlayerMPFake.createFake(name, context.getSource().getServer(), pos.x, pos.y, pos.z, facing.y, facing.x, context.getSource().getPlayer().getSpawnPointDimension(), mode, flying);
     }
 
-    public static EntityPlayerMPFake spawn(String name, Vec3d pos, CommandContext<ServerCommandSource> context){
+    public static EntityPlayerMPFake spawn(String name, Vec3d pos, CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         GameMode mode = GameMode.CREATIVE;
         PlayerEntity sourcePlayer = context.getSource().getPlayer();
 
